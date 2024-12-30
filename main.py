@@ -49,10 +49,6 @@ def get_copy_of_session():
     data = copy.deepcopy(st.session_state.data)
     return data
 
-def get_session_key_value(key):
-    data = get_copy_of_session()
-    return data[key]
-# Function to generate dynamic question from the model
 def generate_dynamic_question(topic,asked_questions):
     prompt = f"Generate a question about {topic} in English with a correct answer."
     chat_session = model.start_chat(
@@ -72,7 +68,7 @@ def generate_dynamic_question(topic,asked_questions):
 
     return parse_response(response)
 
-def check_ans(question,answer):
+def check_answer(question,answer):
 
         prompt = f"check the answer: '{answer}' is correct or not for question: '{question}'"
         chat_session = model.start_chat(
@@ -97,7 +93,6 @@ def check_ans(question,answer):
         print('is_correct',is_correct)
         return bool(is_correct)
 
-
 def parse_response(response):
     try:
         if not response.text:
@@ -114,7 +109,6 @@ def parse_response(response):
     except (json.JSONDecodeError, IndexError, AttributeError, ValueError) as e:
         print(f"Error: {e}")
         return "Sorry, I couldn't generate a question at this time.", None
-
 
 def next_topic():
     data = get_copy_of_session()
@@ -134,7 +128,7 @@ def display_question_and_handle_answer():
         user_answer = st.text_input(f"Your Answer (Question {data['question_count'] + 1}):", key="user_answer")
 
         if st.button("Submit Answer", key="submit_button"):
-            if check_ans(data['current_question'], user_answer.strip().lower()):
+            if check_answer(data['current_question'], user_answer.strip().lower()):
                 data["correct_answers"] += 1
                 st.success("Correct! 🎉 Great job!")
             else:
@@ -155,31 +149,15 @@ def display_question_and_handle_answer():
             st.rerun()
     print(data)
     st.write(f"Total questions answered: {data['correct_answers']}/{len(data['asked_questions'])}")
-    
 
-def check_answer(user_answer):
-    data = get_copy_of_session()
-    if check_ans(data['current_question'],user_answer.strip().lower()):
-        data["correct_answers"] += 1
-        st.session_state.data = data
-        st.success("Correct! 🎉 Great job!")
-    else:
-        st.error(f"Wrong! The correct answer is: {data['current_answer']}")
-
-# Main Function to control the flow
 def main():
     initialize_session_state()
-
     data = get_copy_of_session()
 
     if data['question_count'] < min_questions_per_topic and data['current_question'] is None:
-
         question, answer = generate_dynamic_question(data['current_topic'],data['asked_questions'])
-
-        # Ensure the question hasn't been asked already
         while question in data['asked_questions']:
             question, answer = generate_dynamic_question(data['current_topic'])
-
         data ={
             **data,
             "current_question":question,
@@ -188,8 +166,5 @@ def main():
         st.session_state.data = data
     display_question_and_handle_answer()
 
-
-
-# Run the application=
 if __name__ == "__main__":
     main()
